@@ -41,13 +41,42 @@ ansible是一款自动化运维工具，curve-ansible 是基于 ansible playbook
 - 安装 ansible 2.5.9，用于部署集群（**目前仅支持ansible 2.5.9版本，其他版本会有语法问题**）
 - 安装 docker 18.09 及以上， 用于部署快照克隆服务器
 
+##### CentOs8环境准备具体步骤
+1. root用户登录机器，创建curve用户：
+
+   ```bash
+   $ adduser curve
+   ```
+
+2. 在root下设置curve用户免密sudo
+
+   ```bash
+   $ su  # 进入root用户
+   $ chmod u+w /etc/sudoers  # 设置为可写
+   $ vi /etc/sudoers  # 在'%wheel  ALL=(ALL)  ALL'下添加行‘curve ALL=(ALL) NOPASSWD:ALL’。若无该行，则在'root ALL=(ALL:ALL) ALL'后添加。curve ALL=(ALL) NOPASSWD:ALL
+   $ # 检查/etc/sudoers中的secure_path里是否有/usr/local/bin，如果没有，则添加进去
+   $ chmod u-w /etc/sudoers  #恢复只读
+   $ su curve  # 切换到curve用户
+   $ sudo ls  # 测试sudo是否正确配置
+   ```
+
+3. curve用户下配置ssh登录
+   ```bash
+   $ su curve  # 切换到curve用户
+   $ ssh-keygen  # 生成ssh秘钥
+   $ ssh-copy-id curve@127.0.0.1  # 配置登录到本机权限
+   $ ssh 127.0.0.1   # 验证一下配置是否正确
+   ```
+4. 安装ansible 2.5.9
+   ```bash
+   $ sudo yum install python2  # 安装python2
+   $ pip2 install ansible==2.5.9  # 安装ansible
+   $ ansible-playbook  # 检查是否有问题
+   ```
+5. 安装其他依赖：libssl, perf, perl-podlators, make, gcc（6.1）
 #### 实施部署
 
-0. ansible --version确认ansible版本是2.5.9
-
-1. 以 ```root``` 用户登录中控机， 在中控机上创建 ```curve``` 用户， 确保能够通过 ```curve```用户ssh登录本机
-   - 切换到curve用户ssh-keygen生成ssh key
-   - ssh-copy-id curve@localhost
+1. 切换到curve用户下执行一下操作
 
 2. 下载tar包并解压
 
@@ -134,6 +163,42 @@ ansible是一款自动化运维工具，curve-ansible 是基于 ansible playbook
 - 选择三台机器中的一个作为中控机，安装 ansible 2.5.9，用于部署集群（**目前只支持ansible 2.5.9下的部署**）
 - 安装 docker 18.09 及以上， 用于部署快照克隆服务器
 
+##### CentOs8环境准备具体步骤
+下面这些步骤要三台机器
+1. root用户登录机器，创建curve用户：
+
+   ```bash
+   $ adduser curve
+   ```
+
+2. 在root下设置curve用户免密sudo
+
+   ```bash
+   $ su  # 进入root用户
+   $ chmod u+w /etc/sudoers  # 设置为可写
+   $ vi /etc/sudoers  # 在'%wheel  ALL=(ALL)  ALL'下添加行‘curve ALL=(ALL) NOPASSWD:ALL’。若无该行，则在'root ALL=(ALL:ALL) ALL'后添加。curve ALL=(ALL) NOPASSWD:ALL
+   $ # 检查/etc/sudoers中的secure_path里是否有/usr/local/bin，如果没有，则添加进去
+   $ chmod u-w /etc/sudoers  #恢复只读
+   $ su curve  # 切换到curve用户
+   $ sudo ls  # 测试sudo是否正确配置
+   ```
+
+3. curve用户下配置ssh登录
+   ```bash
+   $ su curve  # 切换到curve用户
+   $ ssh-keygen  # 生成ssh秘钥
+   $ ssh-copy-id curve@127.0.0.1  # 配置登录到本机权限
+   $ ssh 127.0.0.1   # 验证一下配置是否正确
+   ```
+4. 安装其他依赖：libssl, perf, perl-podlators, make, gcc（6.1）
+
+下面的步骤只需要在中控机上执行
+1. 安装ansible 2.5.9
+   ```bash
+   $ sudo yum install python2  # 安装python2
+   $ pip2 install ansible==2.5.9  # 安装ansible
+   $ ansible-playbook  # 检查是否有问题
+
 #### 实施部署
 
 1. 在三台机器上分别用 ```root``` 用户登录，创建 ```curve``` 用户， 并生成ssh key，保证这三台机器可以通过ssh互相登录
@@ -182,7 +247,7 @@ ansible是一款自动化运维工具，curve-ansible 是基于 ansible playbook
    [mds:vars]
    mds_dummy_port=6667
    mds_port=6666
-   mds_subnet=10.192.100.0/22                      // 改动
+   mds_subnet=10.192.100.0/22                      // 改成想要起mds服务的ip对应的子网
    defined_healthy_status="cluster is healthy"
    mds_package_version="0.0.6.1+160be351"
    tool_package_version="0.0.6.1+160be351"
@@ -205,7 +270,7 @@ ansible是一款自动化运维工具，curve-ansible 是基于 ansible playbook
    [snapshotclone:vars]
    snapshot_port=5556
    snapshot_dummy_port=8081
-   snapshot_subnet=10.192.100.0/22                      // 改动
+   snapshot_subnet=10.192.100.0/22                      // 改成想要启动mds服务的ip对应的子网
    defined_healthy_status="cluster is healthy"
    snapshot_package_version="0.0.6.1.1+7af4d6a4"
    snapshot_need_sudo=true
@@ -241,7 +306,7 @@ ansible是一款自动化运维工具，curve-ansible 是基于 ansible playbook
    # 异步查询结果的间隔
    chunkserver_poll=1
    chunkserver_conf_path=/etc/curve/chunkserver.conf
-   chunkserver_data_dir=./data
+   chunkserver_data_dir=/data          // 改动，chunkserver想要挂载的目录，如果有三个盘，则会被分别挂载到/data/chunkserver0，/data/chunkserver1这些目录
    chunkserver_subnet=10.192.100.1/22                      // 改动
    chunkserver_s3_config_path=/etc/curve/cs_s3.conf
    # chunkserver使用的client相关的配置
@@ -331,24 +396,24 @@ ansible是一款自动化运维工具，curve-ansible 是基于 ansible playbook
    cluster_map:
      servers:
        - name: server1
-         internalip: 10.192.100.1       // 改动
-         internalport: 0                // 改动
-         externalip: 10.192.100.1       // 改动
-         externalport: 0                // 改动
+         internalip: 10.192.100.1       // 部署chunkserver的机器对应的内部ip，用于curve集群内部（mds和chunkserver，chunkserver之间）通信
+         internalport: 0                // 改动，多机部署情况下internalport必须是0，不然只有机器上对应端口的chunkserver才能够注册上
+         externalip: 10.192.100.1       // 部署chunkserver的机器对应的外部ip，用于接受client的请求，可以设置成和internal ip一致
+         externalport: 0                // 改动，多机部署情况下externalport必须是0，不然只有机器上对应端口的chunkserver才能够注册上
          zone: zone1
          physicalpool: pool1
        - name: server2
-         internalip: 10.192.100.2       // 改动
-         internalport: 0                // 改动
-         externalip: 10.192.100.1       // 改动
-         externalport: 0                // 改动
+         internalip: 10.192.100.2       // 改动，原因参考上一个server
+         internalport: 0                // 改动，原因参考上一个server
+         externalip: 10.192.100.2       // 改动，原因参考上一个server
+         externalport: 0                // 改动，原因参考上一个server
          zone: zone2
          physicalpool: pool1
        - name: server3
-         internalip: 10.192.100.3       // 改动
-         internalport: 0                // 改动
-         externalip: 10.192.100.1       // 改动
-         externalport: 0                // 改动
+         internalip: 10.192.100.3       // 改动，原因参考上一个server
+         internalport: 0                // 改动，原因参考上一个server
+         externalip: 10.192.100.3       // 改动，原因参考上一个server
+         externalport: 0                // 改动，原因参考上一个server
          zone: zone3
          physicalpool: pool1
      logicalpools:
@@ -356,7 +421,7 @@ ansible是一款自动化运维工具，curve-ansible 是基于 ansible playbook
          physicalpool: pool1
          type: 0
          replicasnum: 3
-         copysetnum: 2000
+         copysetnum: 2000               // copyset数量与集群规模有关，建议平均一个chunkserver上100个copyset，比如三台机器，每台20个盘的话是20*3*100=6000个copyset，除以三副本就是2000个
          zonenum: 3
          scatterwidth: 0
    ```
